@@ -31,8 +31,8 @@ local rMain, rHelp, rSW, rFastM = new.bool(), new.bool(), new.bool(), new.bool()
 
 update_state = false
 
-local script_vers = 2
-local script_vers_text = "2.00"
+local script_vers = 2.1
+local script_vers_text = "1.05"
 
 local update_url = "https://raw.githubusercontent.com/Faiserx/NewsHelper/refs/heads/main/update.ini" -- ssilka na fayl
 local update_path = getWorkingDirectory() .. "/update.ini" 
