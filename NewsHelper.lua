@@ -31,8 +31,8 @@ local rMain, rHelp, rSW, rFastM = new.bool(), new.bool(), new.bool(), new.bool()
 
 update_state = false
 
-local script_vers = 2.0
-local script_vers_text = "1.00"
+local script_vers = 2.1
+local script_vers_text = "1.05"
 
 local update_url = "https://raw.githubusercontent.com/Faiserx/NewsHelper/refs/heads/main/update.ini" -- ssilka na fayl
 local update_path = getWorkingDirectory() .. "/update.ini" 
@@ -49,7 +49,7 @@ local languageList = {'Английский', 'Французский', 'Исп�
 local languageItems = imgui.new['const char*'][#languageList](languageList)
 
 local id_name = '##Arizona News Helper '
-local tag = '{008080}[News Helper v2]: {C0C0C0}'
+local tag = '{008080}[News Helper v222]: {C0C0C0}'
 local tmp = {['downKey'] = {}}
 
 local ul_rus = {[string.char(168)] = string.char(184)}
