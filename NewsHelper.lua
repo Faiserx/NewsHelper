@@ -1,5 +1,5 @@
 script_name('News Helper by fa1ser')
-script_version('2.0')
+script_version('2.1')
 script_description('Хелпер для СМИ')
 script_author('fa1ser')
 
@@ -19,7 +19,7 @@ local u8 = encoding.UTF8
 
 local sampModule = getModuleHandle('samp.dll')
 
-print('{008080}[News Helper] {C0C0C0}Loaded successfully! Dev: fa1ser')
+print('{008080}[News Helper] {C0C0C0}Loaded successfully! Version: 2.1 Dev: fa1ser')
 
 local mainPages, fastPages, eventPages = new.int(1), new.int(1), new.int(1) 
 local buttonPages = {true, false, false, false} 
@@ -28,19 +28,6 @@ local ToU32 = imgui.ColorConvertFloat4ToU32
 local sizeX, sizeY = getScreenResolution()
 
 local rMain, rHelp, rSW, rFastM = new.bool(), new.bool(), new.bool(), new.bool()  
-
---автообновление 
-
-update_state = false
-
-local script_vers = 2.0
-local script_vers_text = "1.00"
-
-local update_url = "https://raw.githubusercontent.com/Faiserx/NewsHelper/refs/heads/main/update.ini" -- ssilka na fayl
-local update_path = getWorkingDirectory() .. "/update.ini" 
-
-local script_url = "https://raw.githubusercontent.com/Faiserx/NewsHelper/refs/heads/main/NewsHelper.lua" -- ssilka na fayl
-local script_path = thisScript().path
 
 local inputDec = new.char[8192]() 
 local inputAd, inputAdText, inputReplace, iptBind  = new.char[256](), new.char[256](), new.char[128](), new.char[128]() 
@@ -106,20 +93,11 @@ function main()
 	if sampIsLocalPlayerSpawned() then
 		sampAddChatMessage(tag .. u8:decode('Привет, скрипт успешно загружен!'), 0xFFFFFF)
 		sampAddChatMessage(tag .. u8:decode('Команды активации скрипта: /nh, /newshelp, приятного пользования!'), 0xFFFFFF)
-		buttonupdate('','[SMI-plalkeo]{FFFFFF}')
+		buttonupdate('https://raw.githubusercontent.com/Faiserx/NewsHelper/refs/heads/main/NewsHelper.lua','[News Helper]{FFFFFF}')
 	end
 
 	while true do
 		wait(0)
-
-		if update_state then
-			downloadUrlToFile(script_url, script_path, function(id, status)
-				if status == dlstatus.STATUS_ENDDOWNLOADDATA then
-					sampAddChatMessage('Script has been updated!', -1)
-					thisScript():reload()
-				end
-			end)
-			break
 		end
 
 		if wasKeyPressed(setup.keys.catchAd[2] or setup.keys.catchAd[1]) then
@@ -2864,7 +2842,10 @@ function loadVar()
 			{'Куплю AZ', 'Куплю р/с "Талон на AZ-Coin". Бюджет: '},
 			{'Продам AZ', 'Продам р/с "Талон на AZ-Coin". Цена: '},
 			{'Куплю EXP', 'Куплю талон "Передаваемые EXP". Бюджет: '},
-			{'Продам EXP', 'Продам талон "Передаваемые EXP". Цена: '},
+			{'Продам EXP', 'Продам талон "Передаваемые EXP". Цена: '}
+		},{'Разное',
+			{'Куплю AZ', 'Куплю р/с "Талон на AZ-Coin". Бюджет: '},
+			{'Продам AZ', 'Продам р/с "Талон на AZ-Coin". Цена: '},			
 		}
 	}
 	nHelpEsterSet = {
