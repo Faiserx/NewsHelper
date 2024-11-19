@@ -1,5 +1,5 @@
 script_name('News Helper by fa1ser')
-script_version('2.1')
+script_version('2.2')
 script_description('Хелпер для СМИ')
 script_author('fa1ser')
 
