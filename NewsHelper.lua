@@ -5,7 +5,6 @@ script_author('fa1ser')
 
 require "lib.moonloader"
 local memory = require 'memory'
-local dlstatus = require('moonloader').download_status
 local inicfg = require 'inicfg'
 local bit = require 'bit'
 local ev =  require 'samp.events'
@@ -16,37 +15,59 @@ local new, str, sizeof = imgui.new, ffi.string, ffi.sizeof
 local encoding = require 'encoding'
 encoding.default = 'CP1251'
 local u8 = encoding.UTF8
-
 local sampModule = getModuleHandle('samp.dll')
-
-print('{008080}[News Helper] {C0C0C0}Loaded successfully! Version: 2.1 Dev: fa1ser')
-
+print(u8:decode('{008080}[News Helper] {C0C0C0}Успешно загружен! Версия: '..thisScript().version.. '.  {C0C0C0}Разработчик: fa1ser.'))
+print(u8:decode('{008080}[News Helper] {C0C0C0}Приятного пользования! По всем вопросам обращаться в ВК: vk.com/fa1ser.'))
 local mainPages, fastPages, eventPages = new.int(1), new.int(1), new.int(1) 
 local buttonPages = {true, false, false, false} 
 local buttonPagesEf = {true, false, false, false, false} 
 local ToU32 = imgui.ColorConvertFloat4ToU32
 local sizeX, sizeY = getScreenResolution()
-
 local rMain, rHelp, rSW, rFastM = new.bool(), new.bool(), new.bool(), new.bool()  
-
 local inputDec = new.char[8192]() 
 local inputAd, inputAdText, inputReplace, iptBind  = new.char[256](), new.char[256](), new.char[128](), new.char[128]() 
 local iptEv, inputEvSet, iptNotepad = new.char[8192](), new.char[256](), new.char[4096]() 
-
 local ComboLanguage = new.int()
 local languageList = {'Английский', 'Французский', 'Испанский', 'Немецкий', 'Итальянский'}
 local languageItems = imgui.new['const char*'][#languageList](languageList)
-
 local id_name = '##Arizona News Helper '
 local tag = '{008080}[News Helper]: {C0C0C0}'
 local tmp = {['downKey'] = {}}
-
 local ul_rus = {[string.char(168)] = string.char(184)}
 local un_rus = {[string.char(184)] = string.char(168)}
 for i = 192, 223 do local A, a = string.char(i), string.char(i + 32); ul_rus[A] = a; un_rus[a] = A end
-
 local tAd = {false, '', false} 
 local winSet = {0, {}} 
+
+function update()
+    local raw = 'https://github.com/Faiserx/NewsHelper/blob/main/update.json'
+    local dlstatus = require('moonloader').download_status
+    local requests = require('requests')
+    local f = {}
+    function f:getLastVersion()
+        local response = requests.get(raw)
+        if response.status_code == 200 then
+            return decodeJson(response.text)['last']
+        else
+            return 'UNKNOWN'
+        end
+    end
+    function f:download()
+        local response = requests.get(raw)
+        if response.status_code == 200 then
+            downloadUrlToFile(decodeJson(response.text)['url'], thisScript().path, function (id, status, p1, p2)
+                print('Скачиваю '..decodeJson(response.text)['url']..' в '..thisScript().path)
+                if status == dlstatus.STATUSEX_ENDDOWNLOAD then
+                    sampAddChatMessage(u8:decode(tag..'Скрипт успешно обновлен, перезагружаюсь...'), -1)
+                    thisScript():reload()
+                end
+            end)
+        else
+            sampAddChatMessage(u8:decode(tag..'Ошибка, невозможно установить обновление! Сообщите разработчику! Код: ')..response.status_code, -1)
+        end
+    end
+    return f
+end
 
 function main()
 	if not isSampLoaded() or not isSampfuncsLoaded() then return end
@@ -70,8 +91,6 @@ function main()
 	iptTmp = {['notepad'] = {}} 
 	--------------------------------------------------
 
-	sampRegisterChatCommand("update", update)
-
 	sampRegisterChatCommand('nh', openMenu)
 	sampRegisterChatCommand('newshelper', openMenu)
 	RegisterCallback('menu', setup.keys.menu, openMenu)
@@ -90,15 +109,13 @@ function main()
 		end
 	end)
 
-	if sampIsLocalPlayerSpawned() then
-		sampAddChatMessage(tag .. u8:decode('Привет, скрипт успешно загружен!'), 0xFFFFFF)
-		sampAddChatMessage(tag .. u8:decode('Команды активации скрипта: /nh, /newshelp, приятного пользования!'), 0xFFFFFF)
-		buttonupdate('https://raw.githubusercontent.com/Faiserx/NewsHelper/refs/heads/main/NewsHelper.lua','[News Helper]{FFFFFF}')
+	if sampIsLocalPlayerSpawned() then wait(1000)
+		sampAddChatMessage(u8:decode(tag .. 'Привет, скрипт успешно загружен!'), 0xFFFFFF)
+		sampAddChatMessage(u8:decode(tag .. 'Команды активации скрипта: /nh, /newshelp, приятного пользования!'), 0xFFFFFF)
 	end
 
 	while true do
 		wait(0)
-		end
 
 		if wasKeyPressed(setup.keys.catchAd[2] or setup.keys.catchAd[1]) then
 			for i=1, (#tmp.downKey or 0) do
@@ -288,7 +305,7 @@ imgui.OnFrame(function() return rFastM[0] end,
 			imgui.BeginChild(id_name .. 'child_window_6', imgui.ImVec2((imgui.GetWindowWidth() - wPaddX*2) / 1.7, imgui.GetWindowHeight() - 2 - wPaddY*2), false)
 				imgui.SetCursorPosY(10)
 				if fastPages[0] == 1 then imgui.FmInterviews()
-				elseif fastPages[0] == 2 then 
+				elseif fastPages[0] == 2 then imgui.AdvRules()
 				elseif fastPages[0] == 3 then
 				elseif fastPages[0] == 4 then end
 				imgui.NewLine()
@@ -305,7 +322,7 @@ imgui.OnFrame(function() return rFastM[0] end,
 
 				imgui.NewLine()
 				imgui.SetCursorPosX(46)
-				imgui.CustomMenu({'Собеседывание', 'Проверка ПРО',  'Проверка ППЭ', 'Лидерские действия'}, fastPages, imgui.ImVec2(120, 35), 0.08, true, 15)
+				imgui.CustomMenu({'Собеседование', 'Проверка ПРО',  'Проверка ППЭ', 'Лидерские действия'}, fastPages, imgui.ImVec2(120, 35), 0.08, true, 15)
 			imgui.EndChild()
 		imgui.End()
 		imgui.SetMouseCursor(-1)
@@ -1905,7 +1922,7 @@ function imgui.Mirror()
 			sampSetChatInputEnabled(true)
 			sampSetChatInputText(u8:decode(txtChat))
 		end
-		imgui.Tooltip('Крикабельно, вставит в чат:\n\n'..txtChat)
+		imgui.Tooltip('Кликабельно, вставит в чат:\n\n'..txtChat)
 
 		imgui.SetCursorPosY(imgui.GetCursorPosY() + 6)
 		imgui.Separator()
@@ -1945,6 +1962,51 @@ function imgui.ScrSettings()
 		saveFile('settings.cfg', setup)
 	end
 	imgui.Tooltip('Это дополнительная задержка, при\nфлуде командой. Если у вас пишет\n"Не Флуди!", индивидуально\nувеличите задержку')
+end
+
+function imgui.AdvRules()
+	local questions = {
+		{'Сокращение машин', function ()
+		sampSendChat(u8:decode('Назови мне сокращение для автомобилей.'))
+		end},
+		{'Сокращение фур', function ()
+			sampSendChat(u8:decode('Назови мне сокращение для фур или же ДФТ.'))
+		end},
+		{'Пример объявка про нарко', function ()
+			sampSendChat(u8:decode('Допустим, пришло такое объявление:'))
+			wait(1000)
+			sampSendChat(u8:decode('"Куплю чай по 5к штука"'))
+			wait(1000)
+			sampSendChat(u8:decode('Как ты его отредактируешь?'))
+		end},
+		{'Пример объявка про машину', function ()
+			sampSendChat(u8:decode('Допустим, пришло такое объявление:'))
+			wait(1000)
+			sampSendChat(u8:decode('"Продам БМВ Е34"'))
+			wait(1000)
+			sampSendChat(u8:decode('Как ты его отредактируешь?'))
+		end},
+		{'Пример объявка про дом', function ()
+			sampSendChat(u8:decode('Допустим, пришло такое объявление:'))
+			wait(1000)
+			sampSendChat(u8:decode('"Куплю дом где угодно за 100кк"'))
+			wait(1000)
+			sampSendChat(u8:decode('Как ты его отредактируешь?'))
+		end},
+		{'Сокращение фур', function ()
+			sampSendChat(u8:decode('Допустим, пришло такое объявление:'))
+			wait(1000)
+			sampSendChat(u8:decode('"Продам узи +9 на спину"'))
+			wait(1000)
+			sampSendChat(u8:decode('Как ты его отредактируешь?'))
+		end},
+		{'Сокращение аксов', function ()
+			sampSendChat(u8:decode('Назови мне сокращение для аксессуаров.'))
+		end},
+		{'Сокращение лодок', function ()
+			sampSendChat(u8:decode('Назови мне сокращение для лодок.'))
+		end}
+	}
 end
 
 function imgui.FmInterviews()
@@ -2828,30 +2890,29 @@ function loadVar()
 			{'Куплю м/д ','Куплю м/ф "" для а/м "". Бюджет:'},
 			{'Продам м/д ','Продам м/ф "" для а/м "". Цена:'}
 		},{'Аренда',
-			{'Сдам а/м', 'Сдам а/м "*". Цена: '},
-			{'Сдам г/м', 'Сдам г/м "*". Цена: '},
-			{'Сдам с/т', 'Сдам с/т "*". Цена: '},
-			{'Сдам а/с', 'Сдам а/с "*". Цена: '},
-			{'Сдам л/д', 'Сдам л/д "*". Цена: '},
-			{'Возьму а/м', 'Арендую а/м "*". Бюджет: '},
-			{'Возьму г/м', 'Арендую г/м "*". Бюджет: '},
-			{'Возьму с/т', 'Арендую с/т "*". Бюджет: '},
-			{'Возьму а/с', 'Арендую а/с "*". Бюджет: '},
-			{'Возьму л/д', 'Арендую л/д "*". Бюджет: '}
-		},{'Разное',
+			{'Сдам машину', 'Сдам а/м "*". Цена: '},
+			{'Сдам охранника с доп зп', 'Сдам визитку охранника с нашивкой "доп зп*". Бюджет: '},
+			{'Сдам фуру', 'Сдам г/м "*". Цена: '},
+			{'Сдам самолет', 'Сдам с/т "*". Цена: '},
+			{'Сдам аксессуар', 'Сдам а/с "*". Цена: '},
+			{'Сдам лодку', 'Сдам л/д "*". Цена: '},
+			{'Арендую машину', 'Арендую а/м "*". Бюджет: '},
+			{'Арендую охранника с доп зп', 'Арендую визитку охранника с нашивкой "доп зп*". Бюджет: '},
+			{'Арендую фуру', 'Арендую г/м "*". Бюджет: '},
+			{'Арендую самолет', 'Арендую с/т "*". Бюджет: '},
+			{'Арендую аксессуар', 'Арендую а/с "*". Бюджет: '},
+			{'Арендую лодку марки', 'Арендую л/д "*". Бюджет: '}
+		},{'Разное(AZ, EXP)',
 			{'Куплю AZ', 'Куплю р/с "Талон на AZ-Coin". Бюджет: '},
 			{'Продам AZ', 'Продам р/с "Талон на AZ-Coin". Цена: '},
 			{'Куплю EXP', 'Куплю талон "Передаваемые EXP". Бюджет: '},
-			{'Продам EXP', 'Продам талон "Передаваемые EXP". Цена: '}
-		},{'Разное',
-			{'Куплю AZ', 'Куплю р/с "Талон на AZ-Coin". Бюджет: '},
-			{'Продам AZ', 'Продам р/с "Талон на AZ-Coin". Цена: '},			
+			{'Продам EXP', 'Продам талон "Передаваемые EXP". Цена: '},
 		}
 	}
 	nHelpEsterSet = {
 		{'name','duty','tagCNN','city','server','music'},
 		{'имя и фамилия', 'должность', 'тег в депортамент', 'город', 'имя штата', 'Музыкальная заставка'},
-		{'Faiser Andreich', 'Директор', 'СМИ СФ', 'Сан-Фиерро', 'Скоттдейл', '•°•°•°•°Музыкальная заставка радиостанции Prodigy News•°•°•°•°'},
+		{'Faiser Andreich', 'Директор', 'СМИ СФ', 'Сан-Фиерро', 'Скоттдейл', '°°°°Музыкальная заставка радиостанции г.Сан-Фиерро°°°°'},
 		{'Ваше имя', 'Ваша должность', 'Тег в депортамент', 'Город вашей СМИ', 'Название вашего сервера', 'Музыкальная заставка'}
 	}
 	newsHelpEsters = {
@@ -3262,7 +3323,7 @@ function loadVar()
 		{'00', '.OOO.OOO$'},
 		{'01', '.OOO$/шт'},
 		{'02', '.OOO$/час'},
-		{'про', 'РЛВ || ПРО -> '},
+		{'про', 'РСФ || ПРО -> '},
 		{'опш', 'о/п пошива '},
 		{'осб', 'о/п с биркой '},
 		{'лс', 'Лос-Сантос'},
@@ -3348,56 +3409,4 @@ function loadVar()
 		Ret = {name = nil, data = {}},
 		LargeKeys = {vk.VK_SHIFT, vk.VK_SPACE, vk.VK_CONTROL, vk.VK_MENU, vk.VK_RETURN}
 	}
-end
-
-function update()
-	prefix = '[News Helper]{FFFFFF}'
-	color = 0xFFFFFF
-	local dlstatus = require('moonloader').download_status
-	downloadUrlToFile('https://github.com/Faiserx/NewsHelper/blob/main/NewsHelper.lua', thisScript().path,
-		function(id3, status1, p13, p23)
-		if status1 == dlstatus.STATUS_DOWNLOADINGDATA then
-			print(string.format('Загружено %d из %d.', p13, p23))
-		elseif status1 == dlstatus.STATUS_ENDDOWNLOADDATA then
-			print('Загрузка обновления завершена.')
-			sampAddChatMessage((prefix..' Обновление завершено!'), color)
-			goupdatestatus = true
-			lua_thread.create(function() wait(500) thisScript():reload() end)
-		end
-		if status1 == dlstatus.STATUSEX_ENDDOWNLOAD then
-			if goupdatestatus == nil then
-				sampAddChatMessage((tag ..' Обновление прошло неудачно. Запускаю устаревшую версию..'), color)
-			end
-		end
-	end)
-end
-
-function buttonupdate(ini_url, prefix)
-	local dlstatus = require('moonloader').download_status
-	local ini = getWorkingDirectory() .. '\\update.ini'
-	if doesFileExist(ini) then os.remove(ini) end
-	downloadUrlToFile(ini_url, ini,
-	function(id, status, p1, p2)
-		if status == dlstatus.STATUSEX_ENDDOWNLOAD then
-			if doesFileExist(ini) then
-				local f = io.open(ini, 'r')
-				if f then
-					local info = decodeJson(f:read('*a'))
-					updateversion = info.version
-					f:close()
-					os.remove(ini)
-					if updateversion ~= thisScript().version then
-						local color = curcolor1
-						sampAddChatMessage(prefix.. 'Обнаружено обновление. v'..updateversion)
-						sampAddChatMessage(prefix.. 'Для обновления используйте команду '..curcolor..'/update', color)
-					else
-						update = false
-						sampAddChatMessage(prefix.. 'Обновления не найдены.', curcolor1)
-					end
-				end
-			else
-				update = false
-			end
-		end
-	end)
 end
