@@ -1,5 +1,5 @@
 script_name('News Helper by fa1ser')
-script_version('2.2')
+script_version('2.1')
 script_description('Хелпер для СМИ')
 script_author('fa1ser')
 
@@ -38,39 +38,13 @@ local un_rus = {[string.char(184)] = string.char(168)}
 for i = 192, 223 do local A, a = string.char(i), string.char(i + 32); ul_rus[A] = a; un_rus[a] = A end
 local tAd = {false, '', false} 
 local winSet = {0, {}} 
+local ver = thisScript().version
 
-function update()
-    local raw = 'https://github.com/Faiserx/NewsHelper/blob/main/update.json'
-    local dlstatus = require('moonloader').download_status
-    local requests = require('requests')
-    local f = {}
-    function f:getLastVersion()
-        local response = requests.get(raw)
-        if response.status_code == 200 then
-            return decodeJson(response.text)['last']
-        else
-            return 'UNKNOWN'
-        end
-    end
-    function f:download()
-        local response = requests.get(raw)
-        if response.status_code == 200 then
-            downloadUrlToFile(decodeJson(response.text)['url'], thisScript().path, function (id, status, p1, p2)
-                print('Скачиваю '..decodeJson(response.text)['url']..' в '..thisScript().path)
-                if status == dlstatus.STATUSEX_ENDDOWNLOAD then
-                    sampAddChatMessage(u8:decode(tag..'Скрипт успешно обновлен, перезагружаюсь...'), -1)
-                    thisScript():reload()
-                end
-            end)
-        else
-            sampAddChatMessage(u8:decode(tag..'Ошибка, невозможно установить обновление! Сообщите разработчику! Код: ')..response.status_code, -1)
-        end
-    end
-    return f
-end
+
 
 function main()
 	if not isSampLoaded() or not isSampfuncsLoaded() then return end
+	
 	loadVar() 
 
 	while not isSampAvailable() do wait(100) end
@@ -109,10 +83,10 @@ function main()
 		end
 	end)
 
-	if sampIsLocalPlayerSpawned() then wait(1000)
-		sampAddChatMessage(u8:decode(tag .. 'Привет, скрипт успешно загружен!'), 0xFFFFFF)
-		sampAddChatMessage(u8:decode(tag .. 'Команды активации скрипта: /nh, /newshelp, приятного пользования!'), 0xFFFFFF)
-	end
+	nickname = sampGetPlayerNickname(select(2, sampGetPlayerIdByCharHandle(playerPed)))
+
+	sampAddChatMessage(u8:decode(tag .. 'Приветствую тебя, {32CD32}'..nickname..'{C0C0C0}, скрипт успешно загружен! Версия: '..ver..' '), 0xFFFFFF)
+	sampAddChatMessage(u8:decode(tag .. 'Команды активации скрипта: {6495ED}/nh, /newshelp{C0C0C0}, приятного пользования!'), 0xFFFFFF)
 
 	while true do
 		wait(0)
@@ -589,7 +563,7 @@ function imgui.RenderText(text)
 end
 function imgui.RenderButtonEf(array, tagConcept, func)
 	local tagConcept = tagConcept or {}
-	local tagEvents = {{'tag', esterscfg.events[array.name].tag, '', '', 'Тег которвый вы можете изменить\nсправо. (Можно просто очистить)'}}
+	local tagEvents = {{'tag', esterscfg.events[array.name].tag, '', '', 'Тег которвый вы можете изменить\nс правой стороны. (Можно просто очистить)'}}
 	tagConcept[#tagConcept+1] = tagEvents[1]
 	local cycleEsters = function (arr, t)
 		local t = t or false
@@ -2923,7 +2897,7 @@ function loadVar()
 			['tagCNN'] = 'СМИ СФ',
 			['city'] = 'Сан-Фиерро',
 			['server'] = 'Скоттдейл',
-			['music'] = '•°•°•°•°Музыкальная заставка радиостанции Prodigy News•°•°•°•°',
+			['music'] = '•°•°•°•°Музыкальная заставка радиостанции г.Сан-Фиерро•°•°•°•°',
 			['delay'] = 4
 		},
 		['events'] = {
@@ -2949,7 +2923,7 @@ function loadVar()
 			},
 			['mathem'] = {
 				{'Начать эфир',
-					'/d [{tagCNN}]-[СМИ] Занимаю развлекательную волну. Просьба не перебивать!',
+					'/d [{tagCNN}] to [СМИ] Занимаю развлекательную волну. Просьба не перебивать!',
 					'/news {music}',
 					'/news {tag}Приветствую вас, дорогие слушатели штата {server}.',
 					'/news {tag}У микрофона {duty} СМИ г. {city}',
@@ -2989,12 +2963,12 @@ function loadVar()
 					'/news {tag}Будьте грамотными и всего хорошего Вам и вашим близким!',
 					'/news {tag}До встречи в эфире!!!',
 					'/news {music}',
-					'/d [{tagCNN}]-[СМИ] Освободил развлекательную волну, спасибо, что не перебивали, до связи!'
+					'/d [{tagCNN}] to [СМИ] Освободил развлекательную волну, ценю, что не перебивали, до связи!'
 				}, ['name'] = 'mathem', ['tag'] = '[Математика]: '
 			},
 			['chemic'] = {
 				{'Начать эфир',
-					'/d [{tagCNN}]-[СМИ] Занимаю развлекательную волну. Просьба не перебивать!',
+					'/d [{tagCNN}] to [СМИ] Занимаю развлекательную волну. Просьба не перебивать!',
 					'/news {music}',
 					'/news {tag}Приветствую вас, дорогие слушатели штата {server}.',
 					'/news {tag}У микрофона {name}, {duty} СМИ г. {city}',
@@ -3037,12 +3011,12 @@ function loadVar()
 					'/news {tag}Будьте грамотными и всего хорошего Вам и вашим близким!',
 					'/news {tag}До встречи в эфире!!!',
 					'/news {music}',
-					'/d [{tagCNN}]-[СМИ] Освободил развлекательную волну, спасибо, что не перебивали, до связи!'
+					'/d [{tagCNN}] to [СМИ] Освободил развлекательную волну, ценю, что не перебивали, до связи!'
 				}, ['name'] = 'chemic', ['tag'] = '[Хим.Элементы]: '
 			},
 			['greet'] = {
 				{'Начать эфир',
-					'/d [{tagCNN}]-[СМИ] Занимаю развлекательную волну. Просьба не перебивать!',
+					'/d [{tagCNN}] to [СМИ] Занимаю развлекательную волну. Просьба не перебивать!',
 					'/news {music}',
 					'/news {tag}Приветствую вас, дорогие слушатели штата {server}.',
 					'/news {tag}У микрофона {name}, {duty} СМИ г. {city}.',
@@ -3072,12 +3046,12 @@ function loadVar()
 					'/news {tag}Будьте грамотными и всего хорошего Вам и вашим близким!',
 					'/news {tag}До встречи в эфире!!!',
 					'/news {music}',
-					'/d [{tagCNN}]-[СМИ] Освободил развлекательную волну, спасибо, что не перебивали, до связи!'
+					'/d [{tagCNN}] to [СМИ] Освободил развлекательную волну, ценю, что не перебивали, до связи!'
 				}, ['name'] = 'greet', ['tag'] = '[Приветы]: '
 			},
 			['tohide'] = {
 				{'Начать эфир',
-					'/d [{tagCNN}]-[СМИ] Занимаю развлекательную волну. Просьба не перебивать!',
+					'/d [{tagCNN}] to [СМИ] Занимаю развлекательную волну. Просьба не перебивать!',
 					'/news {music}',
 					'/news {tag}Приветствую вас, дорогие слушатели штата {server}.',
 					'/news {tag}У микрофона {name}, {duty} радиостанции г. {city}.',
@@ -3113,12 +3087,12 @@ function loadVar()
 					'/news {tag}Будьте грамотными и всего хорошего Вам и вашим близким!',
 					'/news {tag}До встречи в эфире!!!',
 					'/news {music}',
-					'/d [{tagCNN}]-[СМИ] Освободил развлекательную волну, спасибо, что не перебивали, до связи!'
+					'/d [{tagCNN}] to [СМИ] Освободил развлекательную волну, ценю, что не перебивали, до связи!'
 				}, ['name'] = 'tohide', ['tag'] = '[Прятки]: '
 			},
 			['capitals'] = {
 				{'Начать эфир',
-					'/d [{tagCNN}]-[СМИ] Занимаю развлекательную волну. Просьба не перебивать!',
+					'/d [{tagCNN}] to [СМИ] Занимаю развлекательную волну. Просьба не перебивать!',
 					'/news {music}',
 					'/news {tag}Приветствую вас, дорогие слушатели штата {server}.',
 					'/news {tag}У микрофона {name}, {duty} СМИ г. {city}.',
@@ -3161,12 +3135,12 @@ function loadVar()
 					'/news {tag}Будьте грамотными и берегите своих близких!',
 					'/news {tag}До встречи в эфире!!!',
 					'/news {music}',
-					'/d [{tagCNN}]-[СМИ] Освободил развлекательную волну 114.6 FM, до связи!'
+					'/d [{tagCNN}] to [СМИ] Освободил развлекательную волну 114.6 FM, до связи!'
 				}, ['name'] = 'capitals', ['tag'] = '[Столицы]: '
 			},
 			['mirror'] = {
 				{'Начать эфир',
-					'/d [{tagCNN}]-[СМИ] Занимаю развлекательную волну. Просьба не перебивать!',
+					'/d [{tagCNN}] to [СМИ] Занимаю развлекательную волну. Просьба не перебивать!',
 					'/news {music}',
 					'/news {tag}Приветствую вас, дорогие слушатели штата {server}.',
 					'/news {tag}У микрофона {name}, {duty} радиостанции г. {city}.',
@@ -3211,13 +3185,13 @@ function loadVar()
 					'/news {tag}Будьте грамотными и всего хорошего Вам и вашим близким!',
 					'/news {tag}До встречи в эфире!!!',
 					'/news {music}',
-					'/d [{tagCNN}]-[СМИ] Освободил развлекательную волну, спасибо, что не перебивали, до связи!'
+					'/d [{tagCNN}] to [СМИ] Освободил развлекательную волну, ценю, что не перебивали, до связи!'
 				}, ['name'] = 'mirror', ['tag'] = '[Зеркало]: ',
 				['notepad'] = 'Анишам = Машина\nАгинк = Книга\nЛотс = Стол\nАкчур = Ручка\nЬтаворк = Кровать\nАклобтуф = Футболка\nСуболг = Глобус\nАнитрак = Картина\nЛутс = Стул\nЕинетсар = Растение\nАде = Еда\nАдогоп = Погода\nРетюьпмок = Компьютер\nАклерат = Тарелка\nАнетс = Стена\nТок = Кот\nЬдевдем = Медведь\nАбыр = Рыба\nЕьлесев = Веселье\nНизагам = Магазин\n'
 			},
 			['interpreter'] = {
 				{'Начать эфир',
-					'/d [{tagCNN}]-[СМИ] Занимаю развлекательную волну. Просьба не перебивать!',
+					'/d [{tagCNN}] to [СМИ] Занимаю развлекательную волну. Просьба не перебивать!',
 					'/news {music}',
 					'/news {tag}Приветствую вас, дорогие слушатели штата {server}.',
 					'/news {tag}У микрофона {duty} СМИ г. {city}',
@@ -3257,7 +3231,7 @@ function loadVar()
 					'/news {tag}Будьте грамотными и всего хорошего Вам и вашим близким!',
 					'/news {tag}До встречи в эфире!!!',
 					'/news {music}',
-					'/d [{tagCNN}]-[СМИ] Освободил развлекательную волну, спасибо, что не перебивали, до связи!'
+					'/d [{tagCNN}] to [СМИ] Освободил развлекательную волну, ценю, что не перебивали, до связи!'
 				}, ['name'] = 'interpreter', ['tag'] = '[Переводчики]: '
 			}
 		}
