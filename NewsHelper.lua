@@ -1,5 +1,5 @@
 script_name('News Helper by fa1ser')
-script_version('2.1')
+script_version('2.2')
 script_description('Хелпер для СМИ')
 script_author('fa1ser')
 
@@ -11,6 +11,7 @@ local ev =  require 'samp.events'
 local vk = require 'vkeys'
 local imgui = require 'mimgui'
 local ffi = require 'ffi'
+local dlstatus = require 'moonloader'.download_status
 local new, str, sizeof = imgui.new, ffi.string, ffi.sizeof
 local encoding = require 'encoding'
 encoding.default = 'CP1251'
@@ -40,7 +41,39 @@ local tAd = {false, '', false}
 local winSet = {0, {}} 
 local ver = thisScript().version
 
+function update()
+	local fpath = os.getenv('TEMP') .. '\\testing_version.json' -- куда будет качаться наш файлик для сравнения версии
+	downloadUrlToFile('https://api.jsonbin.io/v3/b/6756d2caad19ca34f8d818db', fpath, function(id, status, p1, p2) -- ссылку на ваш гитхаб где есть строчки которые я ввёл в теме или любой другой сайт
+	  if status == dlstatus.STATUS_ENDDOWNLOADDATA then
+	  local f = io.open(fpath, 'r') -- открывает файл
+	  if f then
+		local info = decodeJson(f:read('*a')) -- читает
+		updatelink = info.updateurl
+		if info and info.latest then
+		  version = tonumber(info.latest) -- переводит версию в число
+		  if version > tonumber(thisScript().version) then -- если версия больше чем версия установленная то...
+			lua_thread.create(goupdate) -- апдейт
+		  else -- если меньше, то
+			update = false -- не даём обновиться
+			sampAddChatMessage(u8:decode(tag..'Обновление не удалось. Причина: У вас уже установлена последняя версия.'), 0xFFFFFF)
+		  end
+		end
+	  end
+	end
+end)
+end
 
+function goupdate()
+	sampAddChatMessage(u8:decode(tag..'Обнаружено обновление! Обновляюсь...'), 0xFFFFFF)
+	sampAddChatMessage(u8:decode(tag..'Текущая версия: '..ver..' Новая версия: '..version), 0xFFFFFF)
+	wait(300)
+	downloadUrlToFile(updatelink, thisScript().path, function(id3, status1, p13, p23) -- качает ваш файлик с latest version
+	  if status1 == dlstatus.STATUS_ENDDOWNLOADDATA then
+	  sampAddChatMessage(u8:decode(tag..'Обновление успешно загружено!'), 0xFFFFFF)
+	  thisScript():reload()
+	  end
+	end)
+end
 
 function main()
 	if not isSampLoaded() or not isSampfuncsLoaded() then return end
