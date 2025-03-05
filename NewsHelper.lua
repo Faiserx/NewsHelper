@@ -1,5 +1,5 @@
 script_name('News Helper by fa1ser')
-script_version('2.2')
+script_version('2.3')
 script_description('Хелпер для СМИ')
 script_author('fa1ser')
 
@@ -10,69 +10,80 @@ local bit = require 'bit'
 local ev =  require 'samp.events'
 local vk = require 'vkeys'
 local imgui = require 'mimgui'
+
 local ffi = require 'ffi'
-local dlstatus = require 'moonloader'.download_status
 local new, str, sizeof = imgui.new, ffi.string, ffi.sizeof
+
 local encoding = require 'encoding'
 encoding.default = 'CP1251'
 local u8 = encoding.UTF8
+
 local sampModule = getModuleHandle('samp.dll')
+
 print(u8:decode('{008080}[News Helper] {C0C0C0}Успешно загружен! Версия: '..thisScript().version.. '.  {C0C0C0}Разработчик: fa1ser.'))
 print(u8:decode('{008080}[News Helper] {C0C0C0}Приятного пользования! По всем вопросам обращаться в ВК: vk.com/fa1ser.'))
+local playerId = select(2, sampGetPlayerIdByCharHandle(PLAYER_PED))
+
 local mainPages, fastPages, eventPages = new.int(1), new.int(1), new.int(1) 
 local buttonPages = {true, false, false, false} 
-local buttonPagesEf = {true, false, false, false, false} 
+local buttonPagesEf = {true, false, false, false, false}
+
 local ToU32 = imgui.ColorConvertFloat4ToU32
 local sizeX, sizeY = getScreenResolution()
+
 local rMain, rHelp, rSW, rFastM = new.bool(), new.bool(), new.bool(), new.bool()  
 local inputDec = new.char[8192]() 
+
 local inputAd, inputAdText, inputReplace, iptBind  = new.char[256](), new.char[256](), new.char[128](), new.char[128]() 
-local iptEv, inputEvSet, iptNotepad = new.char[8192](), new.char[256](), new.char[4096]() 
+local iptEv, inputEvSet, iptNotepad = new.char[8192](), new.char[256](), new.char[4096]()
 local ComboLanguage = new.int()
+local setrank = imgui.new.int(1)
+local WReason = imgui.new.char[100]()
+local unwarn = imgui.new.char[100]()
+local praise = imgui.new.char[100]()
+
 local languageList = {'Английский', 'Французский', 'Испанский', 'Немецкий', 'Итальянский'}
 local languageItems = imgui.new['const char*'][#languageList](languageList)
+
 local id_name = '##Arizona News Helper '
 local tag = '{008080}[News Helper]: {C0C0C0}'
 local tmp = {['downKey'] = {}}
+
 local ul_rus = {[string.char(168)] = string.char(184)}
 local un_rus = {[string.char(184)] = string.char(168)}
+
 for i = 192, 223 do local A, a = string.char(i), string.char(i + 32); ul_rus[A] = a; un_rus[a] = A end
 local tAd = {false, '', false} 
 local winSet = {0, {}} 
-local ver = thisScript().version
 
 function update()
-	local fpath = os.getenv('TEMP') .. '\\testing_version.json' -- куда будет качаться наш файлик для сравнения версии
-	downloadUrlToFile('https://api.jsonbin.io/v3/b/6756d2caad19ca34f8d818db', fpath, function(id, status, p1, p2) -- ссылку на ваш гитхаб где есть строчки которые я ввёл в теме или любой другой сайт
-	  if status == dlstatus.STATUS_ENDDOWNLOADDATA then
-	  local f = io.open(fpath, 'r') -- открывает файл
-	  if f then
-		local info = decodeJson(f:read('*a')) -- читает
-		updatelink = info.updateurl
-		if info and info.latest then
-		  version = tonumber(info.latest) -- переводит версию в число
-		  if version > tonumber(thisScript().version) then -- если версия больше чем версия установленная то...
-			lua_thread.create(goupdate) -- апдейт
-		  else -- если меньше, то
-			update = false -- не даём обновиться
-			sampAddChatMessage(u8:decode(tag..'Обновление не удалось. Причина: У вас уже установлена последняя версия.'), 0xFFFFFF)
-		  end
-		end
-	  end
-	end
-end)
-end
-
-function goupdate()
-	sampAddChatMessage(u8:decode(tag..'Обнаружено обновление! Обновляюсь...'), 0xFFFFFF)
-	sampAddChatMessage(u8:decode(tag..'Текущая версия: '..ver..' Новая версия: '..version), 0xFFFFFF)
-	wait(300)
-	downloadUrlToFile(updatelink, thisScript().path, function(id3, status1, p13, p23) -- качает ваш файлик с latest version
-	  if status1 == dlstatus.STATUS_ENDDOWNLOADDATA then
-	  sampAddChatMessage(u8:decode(tag..'Обновление успешно загружено!'), 0xFFFFFF)
-	  thisScript():reload()
-	  end
-	end)
+    local raw = 'https://github.com/Faiserx/NewsHelper/blob/main/update.json'
+    local dlstatus = require('moonloader').download_status
+    local requests = require('requests')
+    local f = {}
+    function f:getLastVersion()
+        local response = requests.get(raw)
+        if response.status_code == 200 then
+            return decodeJson(response.text)['last']
+        else
+            return 'UNKNOWN'
+        end
+    end
+    function f:download()
+        local response = requests.get(raw)
+        if response.status_code == 200 then
+            downloadUrlToFile(decodeJson(response.text)['url'], thisScript().path, function (id, status, p1, p2)
+                print('Скачиваю '..decodeJson(response.text)['url']..' в '..thisScript().path)
+                if status == dlstatus.STATUSEX_ENDDOWNLOAD then
+                    sampAddChatMessage(u8:decode(tag..'Скрипт успешно обновлен, перезагружаюсь...'), -1)
+                    thisScript():reload()
+                end
+            end)
+        else
+            sampAddChatMessage(u8:decode(tag..'Ошибка, невозможно установить обновление! Сообщите разработчику! Код: ')..response.status_code, -1)
+        end
+    end
+    return f
 end
 
 function main()
@@ -118,7 +129,7 @@ function main()
 
 	nickname = sampGetPlayerNickname(select(2, sampGetPlayerIdByCharHandle(playerPed)))
 
-	sampAddChatMessage(u8:decode(tag .. 'Приветствую тебя, {32CD32}'..nickname..'{C0C0C0}, скрипт успешно загружен! Версия: '..ver..' '), 0xFFFFFF)
+	sampAddChatMessage(u8:decode(tag .. 'Приветствую тебя, {32CD32}'..nickname..'{C0C0C0}, скрипт успешно загружен!'), 0xFFFFFF)
 	sampAddChatMessage(u8:decode(tag .. 'Команды активации скрипта: {6495ED}/nh, /newshelp{C0C0C0}, приятного пользования!'), 0xFFFFFF)
 
 	while true do
@@ -218,23 +229,15 @@ imgui.OnFrame(function() return rMain[0] end,
 	function(player)
 		imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSizeConstraints(imgui.ImVec2(700, 450), imgui.ImVec2(1240, 840))
-		imgui.Begin('News by fa1ser ##window_1', rMain, imgui.WindowFlags.NoCollapse + (not cheBoxSize[0] and imgui.WindowFlags.NoResize or 0) + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoScrollWithMouse) -- + imgui.WindowFlags.NoMove + imgui.WindowFlags.AlwaysAutoResize
+		imgui.Begin('News Helper ##window_1', rMain, imgui.WindowFlags.NoCollapse + (not cheBoxSize[0] and imgui.WindowFlags.NoResize or 0) + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoScrollWithMouse) -- + imgui.WindowFlags.NoMove + imgui.WindowFlags.AlwaysAutoResize
 		
 			imgui.SetCursorPos(imgui.ImVec2(3, 19))
 			imgui.BeginChild(id_name .. 'child_window_1', imgui.ImVec2(imgui.GetWindowWidth() - 6, 30), false)
 				imgui.Columns(3, id_name .. 'columns_1', false)
-				imgui.TextStart('News Helper by fa1ser')
 				imgui.NextColumn()
-				imgui.TextCenter('v'..thisScript().version..' release')
+				imgui.TextCenter('News Helper Main Menu')
 				imgui.NextColumn()
-				imgui.TextEnd('promo: #andreich')
-				if imgui.IsItemClicked(1) then
-					lua_thread.create(function ()
-						wait(100)
-						thisScript():reload()
-					end)
-				end
-				imgui.Tooltip('Scottdale')
+				imgui.TextEnd('version: '..thisScript().version..' release')
 			imgui.EndChild()
 
 			imgui.SetCursorPos(imgui.ImVec2(3, 48))
@@ -243,7 +246,6 @@ imgui.OnFrame(function() return rMain[0] end,
 				imgui.CustomMenu({
 					'Главная',
 					'Редакция',
-					'Собеседования',
 					'Эфиры',
 					'Настройки'
 				}, mainPages, imgui.ImVec2(107, 32), 0.08, true, 9, {
@@ -259,9 +261,8 @@ imgui.OnFrame(function() return rMain[0] end,
 			
 				if mainPages[0] == 1 then imgui.WindowMain()
 				elseif mainPages[0] == 2 then imgui.LocalSettings()
-				elseif mainPages[0] == 3 then imgui.Text('Скоро..')
-				elseif mainPages[0] == 4 then imgui.LocalEsters()
-				elseif mainPages[0] == 5 then imgui.ScrSettings() end
+				elseif mainPages[0] == 3 then imgui.LocalEsters()
+				elseif mainPages[0] == 4 then imgui.ScrSettings() end
 				
 			imgui.EndChild()
 
@@ -313,8 +314,8 @@ imgui.OnFrame(function() return rFastM[0] end,
 				imgui.SetCursorPosY(10)
 				if fastPages[0] == 1 then imgui.FmInterviews()
 				elseif fastPages[0] == 2 then imgui.AdvRules()
-				elseif fastPages[0] == 3 then
-				elseif fastPages[0] == 4 then end
+				elseif fastPages[0] == 3 then imgui.newsRules()
+				elseif fastPages[0] == 4 then imgui.LeaderActions() end
 				imgui.NewLine()
 			imgui.EndChild()
 			imgui.SameLine(0, 0)
@@ -870,14 +871,12 @@ function imgui.MeNotepad(arrName)
 		saveFile('estersBind.cfg', esterscfg)
 	end
 end
-
 function imgui.WindowMain() 
 	imgui.BeginChild(id_name..'child_7', imgui.ImVec2(imgui.GetWindowWidth() - 195, 180), false, 0)
-		imgui.TextWrapped('Скрипт помощник для работником Средств Массовой Информации. Сделан по многочисленным просьбам, для сотрудников СМИ СФ с сервера Scottdale. Скрипт нацелен именно на помощь, а не автоматизацию. Функции "Бота" тут отсутствуют, скрипт стремится к легализации. На большинстве серверов, данный скрипт должен быть разрешен, но лучше уточняйте у своих главных администраторов, разработчик за блокировку вашего аккаунта ответственности не несет.')
+		imgui.TextWrapped('Скрипт помощник для работником Средств Массовой Информации. Сделан по многочисленным просьбам, для сотрудников СМИ с сервера Scottdale. Скрипт нацелен именно на помощь, а не автоматизацию. Функции "Бота" тут отсутствуют, скрипт стремится к легализации. На большинстве серверов, данный скрипт должен быть разрешен, но лучше уточняйте у своих главных администраторов, разработчик за блокировку вашего аккаунта ответственности не несет.')
 	imgui.EndChild()
 	
 	end
-	
 function imgui.LocalSettings() 
 	imgui.SetCursorPosX(imgui.GetWindowWidth() / 2 - 112)
 	if imgui.HeaderButton(buttonPages[1], ' Объявления ') then
@@ -893,7 +892,7 @@ function imgui.LocalSettings()
 	if imgui.HeaderButton(buttonPages[3], ' Быстрые клавиши ') then
 		buttonPages = {false, false, true, false}
 	end
-	imgui.Tooltip('Настройка бинд-клавишь')
+	imgui.Tooltip('Настройка бинд-клавиш')
 	imgui.SetCursorPosY(32)
 	if buttonPages[1] then imgui.Advertisement()
 	elseif buttonPages[2] then imgui.AutoBind()
@@ -1137,33 +1136,28 @@ function imgui.AutoBindButton()
 end
 function imgui.LocalEsters()
 	imgui.SetCursorPosX(18)
-	if imgui.HeaderButton(buttonPagesEf[5], ' Настройки ') then
-		buttonPagesEf = {false, false, false, false, true}
+	if imgui.HeaderButton(buttonPagesEf[4], ' Настройки ') then
+		buttonPagesEf = {false, false, false, true}
 	end
 	imgui.SameLine()
 	imgui.SetCursorPosX(imgui.GetWindowWidth() / 2 - 132)
 	if imgui.HeaderButton(buttonPagesEf[1], '  Мероприятия ') then
-		buttonPagesEf = {true, false, false, false, false}
+		buttonPagesEf = {true, false, false, false}
 	end
 	imgui.SameLine()
 	if imgui.HeaderButton(buttonPagesEf[2], ' Реклама ') then
-		buttonPagesEf = {false, true, false, false, false}
+		buttonPagesEf = {false, true, false, false}
 	end
 	imgui.SameLine()
 	if imgui.HeaderButton(buttonPagesEf[3], ' Интервью ') then
-		buttonPagesEf = {false, false, true, false, false}
-	end
-	imgui.SameLine()
-	if imgui.HeaderButton(buttonPagesEf[4], ' Погода ') then
-		buttonPagesEf = {false, false, false, true, false}
+		buttonPagesEf = {false, false, true, false}
 	end
 	imgui.SetCursorPosY(32)
 
 	if buttonPagesEf[1] then imgui.Events()
 	elseif buttonPagesEf[2] then imgui.Text('Скоро..')
 	elseif buttonPagesEf[3] then imgui.Text('Скоро..')
-	elseif buttonPagesEf[4] then imgui.Text('Скоро..')
-	elseif buttonPagesEf[5] then imgui.EventsSetting() end
+	elseif buttonPagesEf[4] then imgui.EventsSetting() end
 end
 function imgui.EventsSetting()
 	imgui.BeginChild(id_name..'child_window_13', imgui.ImVec2(imgui.GetWindowWidth() - 12, imgui.GetWindowHeight() - 40), false)
@@ -1260,7 +1254,6 @@ function imgui.EventDescription()
 		imgui.NewLine()
 		imgui.TextWrapped('Если вы столкнетесь с багами или вам будет не удобно использовать данный биндер, обязательно напиши, что именно тут не так!')
 		imgui.SetCursorPosY(imgui.GetWindowHeight() - 30)
-		imgui.TextWrapped('p.s. я не играю в самп и никогда не состоял в СМИ, так что не знаю, удобно вам или нет. Обязательно дайте обратную связь!')
 	imgui.EndChild()
 end
 function imgui.Mathematics()
@@ -1969,53 +1962,69 @@ function imgui.ScrSettings()
 		saveFile('settings.cfg', setup)
 	end
 	imgui.Tooltip('Это дополнительная задержка, при\nфлуде командой. Если у вас пишет\n"Не Флуди!", индивидуально\nувеличите задержку')
+
+	if imgui.Button('Перезагрузить скрипт', imgui.ImVec2(280,25)) then
+		thisScript():reload()
+	end
 end
 
 function imgui.AdvRules()
-	local questions = {
-		{'Сокращение машин', function ()
-		sampSendChat(u8:decode('Назови мне сокращение для автомобилей.'))
-		end},
-		{'Сокращение фур', function ()
-			sampSendChat(u8:decode('Назови мне сокращение для фур или же ДФТ.'))
-		end},
-		{'Пример объявка про нарко', function ()
-			sampSendChat(u8:decode('Допустим, пришло такое объявление:'))
-			wait(1000)
-			sampSendChat(u8:decode('"Куплю чай по 5к штука"'))
-			wait(1000)
-			sampSendChat(u8:decode('Как ты его отредактируешь?'))
-		end},
-		{'Пример объявка про машину', function ()
+	imgui.BeginChild(id_name..'child_window2',imgui.ImVec2(imgui.GetWindowWidth() - 12, imgui.GetWindowHeight() - 40),false)
+		if imgui.Button('Приветствие', imgui.ImVec2(250,30)) then
+			sampSendChat(u8:decode('Приветствую, вы готовы сдать ПРО?'))
+		end
+		imgui.Tooltip('В чат: Приветствую, вы готовы сдать ПРО?')
+		if imgui.Button('Вопрос №1', imgui.ImVec2(250,30)) then
+			sampSendChat(u8:decode('Назови мне сокращение для автомобилей.'))
+		end
+		imgui.Tooltip('В чат: Назови мне сокращение для автомобилей.')
+		if imgui.Button('Вопрос №2', imgui.ImVec2(250,30)) then
+			sampSendChat(u8:decode('Назови мне сокращение для аксессуаров.'))
+		end
+		imgui.Tooltip('В чат: Назови мне сокращение для аксессуаров.')
+		if imgui.Button('Вопрос №3', imgui.ImVec2(250,30)) then
+			sampSendChat(u8:decode('Назови мне сокращение для аксессуаров.'))
+		end
+		imgui.Tooltip('В чат: Назови мне сокращение для аксессуаров.')
+		if imgui.Button('Вопрос №4', imgui.ImVec2(250,30)) then
+			lua_thread.create(function()
 			sampSendChat(u8:decode('Допустим, пришло такое объявление:'))
 			wait(1000)
 			sampSendChat(u8:decode('"Продам БМВ Е34"'))
 			wait(1000)
 			sampSendChat(u8:decode('Как ты его отредактируешь?'))
-		end},
-		{'Пример объявка про дом', function ()
-			sampSendChat(u8:decode('Допустим, пришло такое объявление:'))
+			end)
+		end
+		imgui.Tooltip('В чат: Допустим, пришло такое объявление: \n "Продам БМВ Е34" \n Как ты его отредактируешь?')
+		if imgui.Button('Вопрос №5', imgui.ImVec2(250,30)) then
+			lua_thread.create(function()
+				sampSendChat(u8:decode('Допустим, пришло такое объявление:'))
+				wait(1000)
+				sampSendChat(u8:decode('"Куплю чай по 5к штука"'))
+				wait(1000)
+				sampSendChat(u8:decode('Как ты его отредактируешь?'))
+			end)
+		end
+		imgui.Tooltip('В чат: Допустим, пришло такое объявление: \n "Куплю чай по 5к штука" \n Как ты его отредактируешь?')
+		if imgui.Button('Сдал', imgui.ImVec2(121,30)) then
+			lua_thread.create(function()
+			sampSendChat(u8:decode('Поздравляю, вы сдали ПРО!'))
+			wait(100)
+			sampSendChat('/time')
+			end)
+		end
+		imgui.Tooltip('В чат: Поздравляю, вы сдали ПРО!')
+		imgui.SameLine()
+		if imgui.Button('Не сдал', imgui.ImVec2(121,30)) then
+			lua_thread.create(function()
+			sampSendChat(u8:decode('К сожалению, вы не сдали ПРО.'))
 			wait(1000)
-			sampSendChat(u8:decode('"Куплю дом где угодно за 100кк"'))
-			wait(1000)
-			sampSendChat(u8:decode('Как ты его отредактируешь?'))
-		end},
-		{'Сокращение фур', function ()
-			sampSendChat(u8:decode('Допустим, пришло такое объявление:'))
-			wait(1000)
-			sampSendChat(u8:decode('"Продам узи +9 на спину"'))
-			wait(1000)
-			sampSendChat(u8:decode('Как ты его отредактируешь?'))
-		end},
-		{'Сокращение аксов', function ()
-			sampSendChat(u8:decode('Назови мне сокращение для аксессуаров.'))
-		end},
-		{'Сокращение лодок', function ()
-			sampSendChat(u8:decode('Назови мне сокращение для лодок.'))
-		end}
-	}
+			sampSendChat(u8:decode('Не расстраивайтесь, подучите и приходите позже!'))
+			end)
+		end
+		imgui.Tooltip('В чат: К сожалению, вы не сдали ПРО. \n Не расстраивайтесь, подучите и приходите позже!')
+	imgui.EndChild()
 end
-
 function imgui.FmInterviews()
 	local refusals = {
 		{'Назад', function ()
@@ -2192,7 +2201,91 @@ function imgui.FmInterviews()
 		if menu[i][3] then imgui.Tooltip(menu[i][3]) end
 	end
 end
+function imgui.newsRules()
+	imgui.BeginChild(id_name..'child_window3',imgui.ImVec2(imgui.GetWindowWidth() - 12, imgui.GetWindowHeight() - 40),false)
+	if imgui.Button('Приветствие', imgui.ImVec2(250,30)) then
+		sampSendChat(u8:decode('Приветствую, вы готовы сдать ППЭ?'))
+	end
+	imgui.Tooltip('В чат: Приветствую, вы готовы сдать ППЭ?')
 
+	if imgui.Button('Вопрос №1', imgui.ImVec2(250,30)) then
+		sampSendChat(u8:decode('Подскажи, что нужно сделать перед тем, как начать эфир?'))
+	end
+	imgui.Tooltip('В чат: Подскажи, что нужно сделать перед тем, как начать эфир?')
+
+	if imgui.Button('Вопрос №2', imgui.ImVec2(250,30)) then
+		sampSendChat(u8:decode('Назови мне тэг нашей радиостанции в рации департамента'))
+	end
+	imgui.Tooltip('В чат: Назови мне тэг нашей радиостанции в рации департамента')
+
+	if imgui.Button('Вопрос №3', imgui.ImVec2(250,30)) then
+		sampSendChat(u8:decode('Можно ли материться в эфирах?'))
+	end
+	imgui.Tooltip('В чат: Можно ли материться в эфирах?')
+
+	if imgui.Button('Вопрос №4', imgui.ImVec2(250,30)) then
+		sampSendChat(u8:decode'Можно ли оскорблять кого-либо в эфирах?')
+	end
+	imgui.Tooltip('В чат: Можно ли оскорблять кого-либо в эфирах?')
+
+	if imgui.Button('Вопрос №5', imgui.ImVec2(250,30)) then
+		sampSendChat(u8:decode'Можно ли проводить эфир без забития?')
+	end
+	imgui.Tooltip('Можно ли проводить эфир без забития?')
+
+	if imgui.Button('Сдал', imgui.ImVec2(121,30)) then
+		lua_thread.create(function()
+		sampSendChat(u8:decode('Поздравляю, вы сдали ППЭ!'))
+		wait(100)
+		sampSendChat('/time')
+		end)
+	end
+	imgui.Tooltip('В чат: Поздравляю, вы сдали ППЭ!')
+	imgui.SameLine()
+	if imgui.Button('Не сдал', imgui.ImVec2(121,30)) then
+		lua_thread.create(function()
+		sampSendChat(u8:decode('К сожалению, вы не сдали ППЭ.'))
+		wait(1000)
+		sampSendChat(u8:decode('Не расстраивайтесь, подучите и приходите позже!'))
+		end)
+	end
+	imgui.Tooltip('В чат: К сожалению, вы не сдали ПРО. \n Не расстраивайтесь, подучите и приходите позже!')
+	imgui.EndChild()
+end
+
+function imgui.LeaderActions()
+	imgui.SliderInt('Выберите ранг', setrank, 0, 9, false)
+	if imgui.Button('Изменить ранг', imgui.ImVec2(185,23)) then
+		sampSendChat('/giverank ' ..tmp.targetPlayer.nick.. ' '..setrank[0])
+	end
+	imgui.Separator()
+
+	imgui.InputTextWithHint('##Input1', 'Причина выговора', WReason, 100)
+	reas = u8:decode(ffi.string(WReason))
+	if imgui.Button('Выдать выговор', imgui.ImVec2(185,23)) then
+		sampSendChat('/fwarn '..tmp.targetPlayer.nick..' '..reas)
+	end
+
+	imgui.InputTextWithHint('##Input', 'Причина снятия выговора', unwarn, 100)
+	ureas = u8:decode(ffi.string(unwarn))
+	if imgui.Button('Снять выговор', imgui.ImVec2(185,23)) then
+		sampSendChat('/unfwarn '..tmp.targetPlayer.nick..' '..ureas)
+	end
+
+	imgui.Separator()
+
+	imgui.InputTextWithHint('##Input2', 'Причина выдачи похвалы', praise, 100)
+	prais = u8:decode(ffi.string(praise))
+	if imgui.Button('Выдать похвалу', imgui.ImVec2(185,23)) then
+		sampSendChat('/praise '..tmp.targetPlayer.nick.. ' '..prais)
+	end
+
+	imgui.Separator()
+
+	if imgui.Button('Выдать /fractionrp', imgui.ImVec2(185,25)) then
+		sampSendChat('/fractionrp '..tmp.targetPlayer.nick)
+	end
+end
 function imgui.Tooltip(text)
 	if imgui.IsItemHovered() then
 		imgui.BeginTooltip()
@@ -2343,7 +2436,6 @@ function table.recuiteral(out, inA)
 	end
 	return inA
 end
-
 function utf8len(s)
 	local s = tostring(s)
 	local pos = 1
@@ -2459,15 +2551,6 @@ function urlEncode(str)
 	local str = string.gsub(str, "([^%w])", function (str) return string.format("%%%02X", string.byte(str)) end)
 	return str
 end
-function httpBuild(query)
-	local buff=""
-	for k, v in pairs(query) do
-		buff = buff.. string.format("%s=%s&", k, urlEncode(v))
-	end
-	local buff = string.reverse(string.gsub(string.reverse(buff), "&", "", 1))
-	return buff
-end
-
 
 function getDownKeys()
     local t = {}
