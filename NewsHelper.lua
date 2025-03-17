@@ -1,5 +1,5 @@
 script_name('News Helper by fa1ser')
-script_version('2.4')
+script_version('2.3')
 script_description('Хелпер для СМИ')
 script_author('fa1ser')
 
@@ -173,7 +173,6 @@ function main()
 	end
 	if autoupdate_loaded and enable_autoupdate and Update then
         pcall(Update.check, Update.json_url, Update.prefix, Update.url)
-	end
     end
 end
 
