@@ -62,7 +62,7 @@ function check_update() -- Создаём функцию которая буде
         if status == dlstatus.STATUS_ENDDOWNLOADDATA then
             updateIni = inicfg.load(nil, update_path)
             if tonumber(updateIni.info.vers) > script_vers then -- Сверяем версию в скрипте и в ini файле на github
-                sampAddChatMessage(tag..'Обнаружена новая версия скрипта: '..updateIni.info.vers_text, -1) -- Сообщаем о новой версии.
+                sampAddChatMessage(u8:decode(tag..'Обнаружена новая версия скрипта: '..updateIni.info.vers_text), -1) -- Сообщаем о новой версии.
                 update_found = true -- если обновление найдено, ставим переменной значение true
             end
             os.remove(update_path)
