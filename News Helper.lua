@@ -54,7 +54,7 @@ local script_vers_text = "3.0 release" -- Название нашей верси
 local update_url = 'https://raw.githubusercontent.com/Faiserx/NewsHelper/refs/heads/main/update.ini' -- Путь к ini файлу. Позже нам понадобиться.
 local update_path = getWorkingDirectory() .. "/update.ini"
 
-local script_url = '' -- Путь скрипту.
+local script_url = 'https://raw.githubusercontent.com/Faiserx/NewsHelper/refs/heads/main/News%20Helper.lua' -- Путь скрипту.
 local script_path = thisScript().path
 
 function check_update() -- Создаём функцию которая будет проверять наличие обновлений при запуске скрипта.
@@ -115,7 +115,7 @@ function main()
 		if update_state then -- Если человек напишет /update и обновлени есть, начнётся скаачивание скрипта.
             downloadUrlToFile(script_url, script_path, function(id, status)
                 if status == dlstatus.STATUS_ENDDOWNLOADDATA then
-                    sampAddChatMessage(tag..'Скрипт успешно обновлен, перезагружаюсь...', -1)
+                    sampAddChatMessage(u8:decode(tag..'Скрипт успешно обновлен, перезагружаюсь...)', -1)
                 end
             end)
             break
