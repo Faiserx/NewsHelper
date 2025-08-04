@@ -115,7 +115,7 @@ function main()
 		if update_state then -- Если человек напишет /update и обновлени есть, начнётся скаачивание скрипта.
             downloadUrlToFile(script_url, script_path, function(id, status)
                 if status == dlstatus.STATUS_ENDDOWNLOADDATA then
-                    sampAddChatMessage(u8:decode(tag..'Скрипт успешно обновлен, перезагружаюсь...)', -1)
+                    sampAddChatMessage(u8:decode(tag..'Скрипт успешно обновлен, перезагружаюсь...'), -1)
                 end
             end)
             break
